@@ -88,7 +88,7 @@ class Agent
      *
      * @return void
      */
-    public function __construct(array $config, array $sharedContext = [])
+    public function __construct(array $config, array $sharedContext = [], EventFactoryInterface $eventFactory = null, TransactionsStore $transactionsStore = null, ErrorsStore $errorsStore = null)
     {
         // Init Agent Config
         $this->config = new Config($config);
@@ -115,6 +115,10 @@ class Agent
         $this->sharedContext['env'] = $this->config->get('env', []);
         $this->sharedContext['cookies'] = $this->config->get('cookies', []);
 
+        // Initialize Event Stores
+        $this->transactionsStore = $transactionsStore ?? new TransactionsStore();
+        $this->errorsStore       = $errorsStore ?? new ErrorsStore();
+      
         // Start Global Agent Timer
         $this->timer = new Timer();
         $this->timer->start();
@@ -143,7 +147,7 @@ class Agent
     /**
      * Get the Agent Config
      *
-     * @return \PhilKra\Helper\Config
+     * @return Transaction
      */
     public function getConfig() : \PhilKra\Helper\Config
     {
@@ -186,6 +190,8 @@ class Agent
     {
         // Is the Agent enabled ?
         if ($this->config->get('active') === false) {
+            $this->errorsStore->reset();
+            $this->transactionsStore->reset();
             return true;
         }
 
